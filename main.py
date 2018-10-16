@@ -33,14 +33,14 @@ def blog():
     if request.args:
         id = request.args.get('id')
         query = Blog.query.get(id)
-        return render_template('singlepost.html', post=query)
+        return render_template('single_post.html', post=query)
     else:
         query = Blog.query.all()
         return render_template('blog.html', blog=query)
 
 
 @app.route('/newpost', methods=['POST', 'GET'])
-def new_post():
+def newpost():
     if request.method == 'POST':
         title = request.form['title']
         body = request.form['body']
@@ -56,9 +56,9 @@ def new_post():
             db.session.commit()
             return redirect('./blog?id='+ str(new.id))
 
-        return render_template('newpost.html',title_error=title_error, body_error=body_error, title=title, body=body)
+        return render_template('new_post.html',title_error=title_error, body_error=body_error, title=title, body=body)
     else:
-        return render_template('newpost.html')
+        return render_template('new_post.html')
 
 
 if __name__ == '__main__':    
