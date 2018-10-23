@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://build-a-blog:And12kids$@localhost:8889/build-a-blog'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://Blogz:2kidsandablog@localhost:8889/blogz'
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
 
@@ -15,7 +15,15 @@ class Blog(db.Model):
 
     def __init__(self, title, body):
         self.title = title
-        self.body = body
+
+class User(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(240))
+    password = db.Column(db.String(20))
+
+
+
 
 blogs = []    
 
@@ -26,7 +34,7 @@ def index():
         blog = request.form['blog']
         blogs.append(blog)
 
-    return render_template('blog.html',title="Build-a-blog", blogs=blogs)
+    return render_template('blog.html',title="Blogz", blogs=blogs)
 
 @app.route('/blog', methods=['GET'])
 def blog():
@@ -55,6 +63,14 @@ def newpost():
             db.session.add(new)
             db.session.commit()
             return redirect('./blog?id='+ str(new.id))
+
+@app.route('/signup', methods=['GET','POST'])
+
+@app.route('/login', methods=['GET','POST'])
+
+@app.route('logout', methods=['POST'])
+
+
 
         return render_template('new_post.html',title_error=title_error, body_error=body_error, title=title, body=body)
     else:
