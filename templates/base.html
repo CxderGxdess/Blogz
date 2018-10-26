@@ -7,19 +7,20 @@
         </style>
     </head>
 <body>
+    <div style='float: right; word-spacing:0.5em;'>
+        <a href="/login">Login</a>
+        <a href="/logout">Logout</a>
+    </div>
 
-    <main>
-        <nav>
-            <a href='/blog'>Main Page</a>
+    <div style='word-spacing:0.3em'>
+            <a href='/Home'>Main Page</a>
+            <a href="/blog">All Posts</a>
             <a href='/newpost'>Add a Entry</a>
-        </nav>
+    </div>
 
 
     {% block content %}
     {% endblock %}
-
-
-    </main>
 
 </body>
 </html> 
