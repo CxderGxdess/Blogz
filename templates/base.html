@@ -1,26 +1,23 @@
 <!doctype html>
 <html>
-    <head>
-        <title>{{title}}</title>
-        <style>
-            .error {color: red;}
-        </style>
-    </head>
-<body>
-    <div style='float: right; word-spacing:0.5em;'>
-        <a href="/login">Login</a>
-        <a href="/logout">Logout</a>
-    </div>
+    <h1>Blogz!</h1>
+  <head>
+    <title>{{title}}</title>
+    <style>
+      .error{color:red;
+      }
+  </style>
+  </head>
+  <body>
+    <nav>
+      <a href= "/blog">Blog Listings</a> |
+      <a href= "/newpost" >Add new post</a>|
+      <a href= "/login" >Login</a> |
+      <a href= "/logout" >Logout</a> |
+      <a href= "/" >Home</a>
 
-    <div style='word-spacing:0.3em'>
-            <a href='/Home'>Main Page</a>
-            <a href="/blog">All Posts</a>
-            <a href='/newpost'>Add a Entry</a>
-    </div>
-
-
-    {% block content %}
-    {% endblock %}
-
-</body>
-</html> 
+    </nav>
+  </body>
+  {% block content %}
+  {% endblock %}
+</html>

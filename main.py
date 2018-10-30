@@ -1,10 +1,9 @@
 from flask import Flask, request, redirect, render_template, session, flash
 from flask_sqlalchemy import SQLAlchemy
-from hashutils_hash_n_salt import make_pw_hash, check_pw_hash
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://Blogz:2kidsandablog@localhost:8889/blogz'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:2kidsandablog@localhost:8889/blogz'
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
 
@@ -13,7 +12,7 @@ class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120))
     body = db.Column(db.String(240))
-    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __init__(self, title, body, owner):
         self.title = title
@@ -24,42 +23,66 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(240), unique=True)
-    pw_hash = db.Column(db.String(20))
+    password = db.Column(db.String(20))
     blogs = db.relationship('Blog', backref='owner')
 
     def __init__(self, username, password):
         self.username = username
-        self.pw_hash = make_pw_hash(password)
+        self.password = password
 
 
 @app.route('/login', methods=['GET','POST'])
 def login():
 
     if request.method == 'POST':
-        username = request.form['username_f']
-        password = request.form['password_f']
+        username = request.form['username']
+        password = request.form['password']
         user = User.query.filter_by(username=username).first()
 
-        if user == None:
-            flash('Username does not exist', 'user')
-            return render_template('login.html')
-        elif not check_pw_hash(password, user.pw_hash):
-            flash('User password incorrect', 'pwd')
-            return render_template('login.html')
-        else:
+        if user and user.password == password:
             session['username'] = username
-            return redirect('/blog?user='+str(user.id))
+            flash("Logged in")
+            return redirect('/newpost')
+        else:
+            flash('User password incorrect, or user does not exist', 'error')
     
     return render_template('login.html')
+
+@app.before_request
+def require_login():
+    allowed_routes = ['index','login', 'list_blogs', 'signup', 'logout']
+
+    if request.endpoint not in allowed_routes and 'username' not in session:
+        return redirect('/login')
+
+@app.route('/blog', methods=['GET'])
+def blog():
+
+    
+    blog_id = request.args.get('id')
+    blog_user = request.args.get('user')
+
+    if blog_id:
+        blog_post = Blog.query.get(blog_id)
+        return render_template('blog_entry.html', blog_post=blog_post)
+
+    if blog_user:
+        user = User.query.filter_by(username=blog_user).first()
+        blog_post = Blog.query.filter_by(owner=user).all()
+        return render_template('singleUser.html', blog_post=blog_post, username=blog_user)
+
+    else:
+        blog_post = Blog.query.all()
+        return render_template('blog.html', title="Build a Blog", blog_post=blog_post) 
 
 
 @app.route('/signup', methods=['GET','POST'])
 def signup():
 
     if request.method == "POST":
-        username = request.form['username_f']
-        pwd = request.form['password_f']
-        verify = request.form['verify_f']
+        username = request.form['username']
+        pwd = request.form['password']
+        verify = request.form['verify']
 
         username_error = ''
         password1_error = ''
@@ -116,70 +139,64 @@ def signup():
     return render_template('signup.html')    
 
 
-@app.route('logout')       
-def logout():
-    print(session)
-    if session:
-        del session['username']
-    return redirect('/blog')
-
-@app.before_request
-def require_login():
-    allowed_routes = ['index','login', 'list_blogs', 'signup', 'logout']
-
-    if request.endpoint not in allowed_routes and 'username' not in session:
-        return redirect('/login')
-
-
 @app.route('/newpost', methods=['POST', 'GET'])
 def newpost():
-    if request.method == "POST":
-        title = request.form['title_f']
-        body = request.form['body_f']
+   owner = User.query.filter_by(username=session['username']).first()
     
-        if request.form['title_f'] == '':
-            errorT = 'Please fill in the title'
-        else:
-            errorT = ''
-        
-        if request.form['body_f'] == '':
-            errorB = 'Please fill in the body'
-        else:
-            errorB = ''
+
+    title_error = ""
+    body_error = ""
+
+    if request.method == 'POST' :
+        title = request.form['title']
+        body = request.form['body']
+
+        if len(title) == 0:
+            title_error = "Invalid title"
             
-        if errorB or errorT:
-            return render_template('newpost.html',errorTitle=errorT,errorBody=errorB,title_p=title,body_p=body)
-        else:
-            entry_title = request.form['title_f']
-            entry_body = request.form['body_f']
+        if len(body) == 0:
+            body_error = "Invalid body"
 
-            user = session['username']
-            user_id = User.query.filter_by(username=user).first()
-            blog_entry = Blog(entry_title, entry_body, user_id)
-            db.session.add(blog_entry)
+        if len(title) != 0 and len(body) !=  0:
+            blog_post = Blog(title, body, owner)
+            db.session.add(blog_post)
             db.session.commit()
-
-            value_id = blog_entry.id
-            return redirect('/blog?id='+str(value_id))
+            id = blog_post.id
+            return redirect('/blog?id={0}'.format(id))
+            
+        else:
+            return render_template("newpost.html",
+            title=title,
+            body=body,
+            title_error=title_error,
+            body_error=body_error )
 
     return render_template('newpost.html')
 
 
 @app.route('/blog', methods=['GET'])
 def list_blogs():
-    value_id = request.args.get('id')
-    value_user = request.args.get('user')
+    blog_id = request.args.get('id')
+    blog_user = request.args.get('user')
 
-    if value_user:
-        user_blogs = Blog.query.filter_by(owner_id=value_user).all()
-        return render_template('blog.html',user=user_blogs,value_u=value_user)
-    elif value_id:
-        blog_x = Blog.query.filter_by(id=value_id).all()
-        return render_template('blog.html',blog=blog_x,value_i=value_id)
+    if blog_user:
+        user = User.query.filter_by(username=blog_user).first()
+        blog_post = Blog.query.filter_by(owner=user).all()
+        return render_template('singleUser.html', blog_post=blog_post, username=blog_user)
+
+    elif blog_id:
+        blog_post = Blog.query.get(blog_id)
+        return render_template('blog_entry.html', blog_post=blog_post)
     else:
         blogs = Blog.query.all()
-        return render_template('blog.html', blogs=blogs)
+        return render_template('blog.html',  title="Blogz", blog_post=blogs_post)
 
+
+@app.route('/logout')       
+def logout():
+    
+    del session['username']
+    return redirect('/blog')
 
 @app.route('/')
 def index():
