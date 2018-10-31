@@ -3,9 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:2kidsandablog@localhost:8889/blogz'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://Blogz:2kidsandablog@localhost:8889/blogz'
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
+app.secret_key = 'jazzy44:john:316'
 
 class Blog(db.Model):
 
@@ -141,9 +142,8 @@ def signup():
 
 @app.route('/newpost', methods=['POST', 'GET'])
 def newpost():
-   owner = User.query.filter_by(username=session['username']).first()
-    
 
+    owner = User.query.filter_by(username=session['username']).first()
     title_error = ""
     body_error = ""
 
@@ -163,15 +163,15 @@ def newpost():
             db.session.commit()
             id = blog_post.id
             return redirect('/blog?id={0}'.format(id))
-            
+     
         else:
-            return render_template("newpost.html",
+            return render_template("new_post.html",
             title=title,
             body=body,
             title_error=title_error,
             body_error=body_error )
 
-    return render_template('newpost.html')
+    return render_template('new_post.html')
 
 
 @app.route('/blog', methods=['GET'])
